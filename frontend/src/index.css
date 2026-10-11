@@ -1,0 +1,457 @@
+/* ResumeIQ Login and Authentication */
+
+.auth-page {
+  min-height: 100vh;
+  padding: 28px 6%;
+  box-sizing: border-box;
+  color: #ffffff;
+  font-family: Inter, Arial, sans-serif;
+  background:
+    radial-gradient(ellipse at 5% 5%, rgba(178, 35, 255, 0.8), transparent 35%),
+    radial-gradient(ellipse at 95% 10%, rgba(0, 240, 211, 0.8), transparent 32%),
+    linear-gradient(135deg, #3522c9 0%, #075bd6 52%, #087ce6 100%);
+  overflow-x: hidden;
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1450px;
+  margin: 0 auto;
+}
+
+.brand,
+.card-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #783cff, #00d9e8);
+  box-shadow: 0 0 22px rgba(91, 227, 255, 0.4);
+}
+
+.brand-icon.large {
+  width: 62px;
+  height: 62px;
+  font-size: 34px;
+}
+
+.brand-accent {
+  color: #55f3ef;
+}
+
+.header-register {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 14px;
+}
+
+.outline-button {
+  padding: 12px 25px;
+  color: #ffffff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.outline-button:hover {
+  background: rgba(255, 255, 255, 0.17);
+  transform: translateY(-2px);
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: center;
+  gap: 7%;
+  max-width: 1350px;
+  margin: 45px auto 20px;
+}
+
+.auth-intro {
+  padding: 20px 0;
+}
+
+.eyebrow {
+  display: inline-block;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.auth-intro h1 {
+  margin: 25px 0 18px;
+  font-size: clamp(38px, 4.3vw, 64px);
+  line-height: 1.12;
+  letter-spacing: -1.8px;
+}
+
+.gradient-text {
+  color: #54f0f0;
+}
+
+.intro-description {
+  max-width: 540px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.feature-list {
+  display: grid;
+  gap: 22px;
+  margin-top: 32px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 27px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.feature-icon.purple {
+  background: linear-gradient(135deg, #9d40ff, #653aff);
+}
+
+.feature-icon.blue {
+  background: linear-gradient(135deg, #399dff, #1765ff);
+}
+
+.feature-icon.teal {
+  background: linear-gradient(135deg, #00d7cf, #00a5bd);
+}
+
+.feature-item h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+}
+
+.feature-item p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tagline {
+  margin-top: 38px;
+  color: #a9fff9;
+  font-style: italic;
+  font-size: 16px;
+}
+
+/* Glass login card */
+
+.glass-card {
+  width: 100%;
+  max-width: 540px;
+  justify-self: end;
+  box-sizing: border-box;
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow:
+    0 24px 70px rgba(12, 25, 110, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: card-appear 0.7s ease both;
+}
+
+.card-brand {
+  justify-content: center;
+  font-size: 34px;
+  margin-bottom: 20px;
+}
+
+.glass-card h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 28px;
+}
+
+.card-subtitle {
+  margin: 10px 0 26px;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.auth-form label {
+  margin-top: 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 15px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 13px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.auth-form input:focus {
+  border-color: #55f3ef;
+  box-shadow: 0 0 0 3px rgba(85, 243, 239, 0.15);
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.password-field input {
+  border: none;
+  background: transparent;
+}
+
+.password-field:focus-within {
+  border-color: #55f3ef;
+  box-shadow: 0 0 0 3px rgba(85, 243, 239, 0.15);
+}
+
+.password-field input:focus {
+  box-shadow: none;
+}
+
+.password-toggle {
+  flex-shrink: 0;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #70ffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.gradient-button {
+  margin-top: 18px;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #873cff, #2389ff, #00dcd1);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(40, 90, 255, 0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.gradient-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 220, 220, 0.3);
+}
+
+.gradient-button:disabled {
+  cursor: not-allowed;
+}
+
+.auth-error {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 190, 190, 0.5);
+  border-radius: 10px;
+  background: rgba(150, 0, 35, 0.22);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.auth-footer a {
+  color: #72ffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-footer a:hover,
+.back-home:hover {
+  text-decoration: underline;
+}
+
+.back-home {
+  display: block;
+  margin-top: 18px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+@keyframes card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet and mobile layout */
+
+@media (max-width: 900px) {
+  .auth-page {
+    padding: 22px 5%;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 30px;
+  }
+
+  .auth-intro {
+    text-align: center;
+  }
+
+  .intro-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .feature-list {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+  }
+
+  .tagline {
+    margin-top: 25px;
+  }
+
+  .glass-card {
+    justify-self: center;
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-page {
+    padding: 18px 16px;
+  }
+
+  .brand {
+    font-size: 23px;
+  }
+
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .header-register {
+    gap: 8px;
+  }
+
+  .header-register > span {
+    display: none;
+  }
+
+  .outline-button {
+    padding: 10px 16px;
+  }
+
+  .auth-intro h1 {
+    font-size: 38px;
+  }
+
+  .intro-description {
+    font-size: 15px;
+  }
+
+  .glass-card {
+    padding: 25px 20px;
+    border-radius: 20px;
+  }
+
+  .card-brand {
+    font-size: 28px;
+  }
+
+  .brand-icon.large {
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
+  }
+
+  .glass-card h2 {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card {
+    animation: none;
+  }
+
+  .gradient-button,
+  .outline-button {
+    transition: none;
+  }
+}
