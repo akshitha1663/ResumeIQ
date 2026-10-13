@@ -7,6 +7,14 @@ import java.time.LocalDateTime;
 @Table(name = "resumes")
 public class Resume {
 
+    // userId links this resume to the user who uploaded it (nullable for legacy rows)
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String extractedText;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -45,6 +53,22 @@ public class Resume {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getExtractedText() {
+        return extractedText;
+    }
+
+    public void setExtractedText(String extractedText) {
+        this.extractedText = extractedText;
     }
 
     public String getContentType() {

@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -14,100 +16,72 @@ import SkillGap from "./pages/SkillGap";
 import Recommendations from "./pages/Recommendations";
 import Applications from "./pages/Applications";
 import AdminDashboard from "./pages/AdminDashboard";
+import ManageUsers from "./pages/ManageUsers";
+import ManageJobs from "./pages/ManageJobs";
+import AiChat from "./pages/AiChat";
 
 function App() {
   return (
     <BrowserRouter>
-      <nav
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "18px",
-          alignItems: "center",
-          padding: "16px 24px",
-          background: "#312e81",
-        }}
-      >
-        <Link to="/" style={{ color: "white", fontWeight: "bold" }}>
-          ResumeIQ
-        </Link>
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Link to="/dashboard" style={{ color: "white" }}>
-          Dashboard
-        </Link>
+          {/* Student-protected routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute><Dashboard /></ProtectedRoute>
+          } />
+          <Route path="/resume-upload" element={
+            <ProtectedRoute><ResumeUpload /></ProtectedRoute>
+          } />
+          <Route path="/resume-analysis" element={
+            <ProtectedRoute><ResumeAnalysis /></ProtectedRoute>
+          } />
+          <Route path="/skills" element={
+            <ProtectedRoute><Skills /></ProtectedRoute>
+          } />
+          <Route path="/jobs" element={
+            <ProtectedRoute><Jobs /></ProtectedRoute>
+          } />
+          <Route path="/job-details/:id" element={
+            <ProtectedRoute><JobDetails /></ProtectedRoute>
+          } />
+          <Route path="/job-details" element={
+            <ProtectedRoute><JobDetails /></ProtectedRoute>
+          } />
+          <Route path="/job-matching" element={
+            <ProtectedRoute><JobMatching /></ProtectedRoute>
+          } />
+          <Route path="/skill-gap" element={
+            <ProtectedRoute><SkillGap /></ProtectedRoute>
+          } />
+          <Route path="/recommendations" element={
+            <ProtectedRoute><Recommendations /></ProtectedRoute>
+          } />
+          <Route path="/applications" element={
+            <ProtectedRoute><Applications /></ProtectedRoute>
+          } />
+          <Route path="/ai-assistant" element={
+            <ProtectedRoute><AiChat /></ProtectedRoute>
+          } />
 
-        <Link to="/resume-upload" style={{ color: "white" }}>
-          Upload Resume
-        </Link>
+          {/* Admin-only routes */}
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute requiredRole="ADMIN"><ManageUsers /></ProtectedRoute>
+          } />
+          <Route path="/admin/jobs" element={
+            <ProtectedRoute requiredRole="ADMIN"><ManageJobs /></ProtectedRoute>
+          } />
 
-        <Link to="/resume-analysis" style={{ color: "white" }}>
-          Resume Analysis
-        </Link>
-
-        <Link to="/skills" style={{ color: "white" }}>
-          Skills
-        </Link>
-
-        <Link to="/jobs" style={{ color: "white" }}>
-          Jobs
-        </Link>
-
-        <Link to="/job-matching" style={{ color: "white" }}>
-          Job Matching
-        </Link>
-
-        <Link to="/skill-gap" style={{ color: "white" }}>
-          Skill Gap
-        </Link>
-
-        <Link to="/recommendations" style={{ color: "white" }}>
-          Recommendations
-        </Link>
-
-        <Link to="/applications" style={{ color: "white" }}>
-          Applications
-        </Link>
-
-        <Link to="/admin-dashboard" style={{ color: "white" }}>
-          Admin
-        </Link>
-
-        <Link to="/login" style={{ color: "white" }}>
-          Login
-        </Link>
-
-        <Link to="/register" style={{ color: "white" }}>
-          Register
-        </Link>
-      </nav>
-
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        <Route path="/resume-upload" element={<ResumeUpload />} />
-        <Route path="/resume-analysis" element={<ResumeAnalysis />} />
-
-        <Route path="/skills" element={<Skills />} />
-        <Route path="/jobs" element={<Jobs />} />
-        <Route path="/job-details" element={<JobDetails />} />
-        <Route path="/job-matching" element={<JobMatching />} />
-        <Route path="/skill-gap" element={<SkillGap />} />
-        <Route
-          path="/recommendations"
-          element={<Recommendations />}
-        />
-        <Route path="/applications" element={<Applications />} />
-        <Route
-          path="/admin-dashboard"
-          element={<AdminDashboard />}
-        />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

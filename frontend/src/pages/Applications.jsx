@@ -1,66 +1,27 @@
-import { useEffect, useState } from "react";
-import api from "../services/api";
+import Sidebar from "../components/Sidebar";
 
-function Applications() {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getApplications();
-  }, []);
-
-  const getApplications = async () => {
-    try {
-      const response = await api.get("/applications");
-      setApplications(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <h2>Loading applications...</h2>;
-  }
-
+export default function Applications() {
   return (
-    <div>
-      <h1>My Applications</h1>
-
-      <p>Track the jobs you have applied for.</p>
-
-      <hr />
-
-      {applications.length > 0 ? (
-        applications.map((application) => (
-          <div key={application.id}>
-            <h2>{application.jobTitle}</h2>
-
-            <p>
-              <strong>Company:</strong> {application.company}
-            </p>
-
-            <p>
-              <strong>Location:</strong> {application.location}
-            </p>
-
-            <p>
-              <strong>Applied Date:</strong> {application.appliedDate}
-            </p>
-
-            <p>
-              <strong>Status:</strong> {application.status}
-            </p>
-
-            <hr />
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-content">
+        <div className="page-header">
+          <div>
+            <p className="breadcrumb">Workspace / Applications</p>
+            <h1 className="page-title">Applications</h1>
           </div>
-        ))
-      ) : (
-        <p>You have not applied for any jobs yet.</p>
-      )}
+        </div>
+        <div className="page-body">
+          <div className="empty-state">
+            <div className="empty-icon">📌</div>
+            <h3>Application Tracking — Coming Soon</h3>
+            <p>
+              Job application tracking will be available in a future update.
+              Use the Jobs page to explore opportunities and note the ones you apply to.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default Applications;

@@ -1,493 +1,165 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 import api from "../services/api";
 
-function Jobs() {
-  const navigate = useNavigate();
+const TYPE_COLORS = {
+  "Full-time":   { bg: "rgba(79,70,229,.1)",  color: "var(--clr-primary)" },
+  "Part-time":   { bg: "rgba(6,182,212,.1)",  color: "var(--clr-accent-dark)" },
+  "Internship":  { bg: "rgba(16,185,129,.1)", color: "#059669" },
+  "Remote":      { bg: "rgba(139,92,246,.1)", color: "var(--clr-secondary)" },
+  "Contract":    { bg: "rgba(245,158,11,.1)", color: "#d97706" },
+};
 
-  const [jobs, setJobs] = useState([]);
-  const [search, setSearch] = useState("");
+const typeStyle = (t) => TYPE_COLORS[t] || { bg: "rgba(100,116,139,.1)", color: "var(--clr-text-muted)" };
+
+export default function Jobs() {
+  const navigate = useNavigate();
+  const [jobs, setJobs]       = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
+
+  const [search, setSearch]   = useState("");
+  const [filterType, setType] = useState("");
 
   useEffect(() => {
-    getJobs();
+    api.get("/jobs")
+      .then(r => setJobs(r.data || []))
+      .catch(() => setError("Unable to load jobs. Is the backend running?"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const getJobs = async () => {
-    try {
-      const response = await api.get("/jobs");
+  const jobTypes = [...new Set(jobs.map(j => j.jobType).filter(Boolean))];
 
-      console.log("Jobs:", response.data);
-
-      setJobs(response.data);
-    } catch (error) {
-      console.error(error);
-      setError("Unable to load jobs.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredJobs = jobs.filter((job) => {
-    const searchText = search.toLowerCase();
-
-    return (
-      job.title?.toLowerCase().includes(searchText) ||
-      job.company?.toLowerCase().includes(searchText) ||
-      job.location?.toLowerCase().includes(searchText) ||
-      job.skills?.toLowerCase().includes(searchText)
-    );
+  const filtered = jobs.filter(j => {
+    const q = search.toLowerCase();
+    const matchText = !q || j.title?.toLowerCase().includes(q)
+      || j.company?.toLowerCase().includes(q)
+      || j.location?.toLowerCase().includes(q)
+      || j.skills?.toLowerCase().includes(q);
+    const matchType = !filterType || j.jobType === filterType;
+    return matchText && matchType;
   });
 
-  const getInitial = (company) => {
-    return company?.charAt(0)?.toUpperCase() || "C";
-  };
-
-  if (loading) {
-    return (
-      <div className="loading">
-        🔍 Finding opportunities for you...
-      </div>
-    );
-  }
+  const skills = (job) =>
+    job.skills ? job.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
 
   return (
-    <div className="app-container">
-
-      {/* NAVBAR */}
-
-      <header
-        style={{
-          background: "white",
-          padding: "16px 30px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid #e7e7f3",
-          position: "sticky",
-          top: 0,
-          zIndex: 10
-        }}
-      >
-        <div>
-          <h2
-            style={{
-              margin: 0,
-              color: "#6c5ce7"
-            }}
-          >
-            ✨ ResumeIQ
-          </h2>
-
-          <small style={{ color: "#73758c" }}>
-            AI Career Assistant
-          </small>
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-content">
+        <div className="page-header">
+          <div>
+            <p className="breadcrumb">Workspace / Find Jobs</p>
+            <h1 className="page-title">Browse Jobs</h1>
+          </div>
+          <span className="badge badge-primary" style={{ fontSize: 14, padding: "8px 14px" }}>
+            {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
+          </span>
         </div>
 
-        <button onClick={() => navigate("/dashboard")}>
-          🏠 Dashboard
-        </button>
-      </header>
-
-
-      <main className="page-container">
-
-        {/* HERO */}
-
-        <section
-          className="gradient-card"
-          style={{
-            textAlign: "center"
-          }}
-        >
-
-          <span
-            style={{
-              background: "rgba(255,255,255,0.18)",
-              padding: "7px 14px",
-              borderRadius: "20px",
-              fontSize: "13px"
-            }}
-          >
-            🎯 Find Your Next Opportunity
-          </span>
-
-          <h1 style={{ marginTop: "20px" }}>
-            Discover Jobs That Match You
-          </h1>
-
-          <p>
-            Explore opportunities based on your
-            skills, experience and career goals.
-          </p>
-
-        </section>
-
-
-        {/* SEARCH */}
-
-        <section
-          className="card"
-          style={{
-            marginTop: "-10px",
-            position: "relative",
-            zIndex: 2,
-            maxWidth: "850px",
-            marginLeft: "auto",
-            marginRight: "auto"
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center"
-            }}
-          >
-
-            <span style={{ fontSize: "24px" }}>
-              🔍
-            </span>
-
-            <input
-              type="text"
-              placeholder="Search by job title, company, location or skill..."
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              style={{
-                maxWidth: "none",
-                border: "none",
-                boxShadow: "none"
-              }}
-            />
-
+        <div className="page-body">
+          {/* Filters */}
+          <div className="card" style={{ marginBottom: 24, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div className="form-field" style={{ flex: 2, minWidth: 200 }}>
+              <label className="form-label">Search</label>
+              <input className="form-input" type="text"
+                placeholder="Role, company, location, skill…"
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <div className="form-field" style={{ flex: 1, minWidth: 140 }}>
+              <label className="form-label">Job Type</label>
+              <select className="form-select" value={filterType} onChange={e => setType(e.target.value)}>
+                <option value="">All types</option>
+                {jobTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {(search || filterType) && (
+              <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(""); setType(""); }}>
+                Clear ✕
+              </button>
+            )}
           </div>
 
-        </section>
+          {/* States */}
+          {loading && <div className="loading-center"><span className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} /><p>Loading jobs…</p></div>}
+          {error && <div className="alert alert-error">{error}</div>}
 
+          {!loading && filtered.length === 0 && !error && (
+            <div className="empty-state">
+              <div className="empty-icon">💼</div>
+              <h3>{jobs.length === 0 ? "No jobs added yet" : "No jobs match your search"}</h3>
+              <p>{jobs.length === 0
+                ? "An admin needs to add jobs to the platform first."
+                : "Try a different search term or clear the filters."}</p>
+              {(search || filterType) && (
+                <button className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => { setSearch(""); setType(""); }}>Clear Filters</button>
+              )}
+            </div>
+          )}
 
-        {/* ERROR */}
-
-        {error && (
-          <div
-            className="error"
-            style={{ marginTop: "25px" }}
-          >
-            {error}
-          </div>
-        )}
-
-
-        {/* RESULTS HEADER */}
-
-        <section
-          style={{
-            marginTop: "35px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px"
-          }}
-        >
-
-          <div>
-
-            <h2>
-              Available Jobs 💼
-            </h2>
-
-            <p>
-              {filteredJobs.length} opportunities found
-            </p>
-
-          </div>
-
-          <span className="badge">
-            🤖 AI Powered
-          </span>
-
-        </section>
-
-
-        {/* JOB CARDS */}
-
-        {filteredJobs.length > 0 ? (
-
-          <div
-            className="grid grid-2"
-            style={{ marginTop: "20px" }}
-          >
-
-            {filteredJobs.map((job) => (
-
-              <div
-                className="job-card"
-                key={job.id}
-              >
-
-                {/* COMPANY HEADER */}
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "15px"
-                  }}
-                >
-
-                  <div
-                    style={{
-                      width: "55px",
-                      height: "55px",
-                      borderRadius: "15px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background:
-                        "linear-gradient(135deg,#6c5ce7,#00b8d9)",
-                      color: "white",
-                      fontSize: "23px",
-                      fontWeight: "800"
-                    }}
-                  >
-                    {getInitial(job.company)}
-                  </div>
-
-                  <div>
-
-                    <h3 style={{ marginBottom: "3px" }}>
-                      {job.title}
-                    </h3>
-
-                    <div className="job-company">
-                      {job.company}
+          {/* Job Grid */}
+          {!loading && filtered.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+              {filtered.map(job => {
+                const { bg, color } = typeStyle(job.jobType);
+                return (
+                  <div key={job.id} className="job-card" style={{ cursor: "pointer" }}
+                    onClick={() => navigate(`/job-details/${job.id}`)}>
+                    <div className="job-card-header">
+                      <div className="company-logo">
+                        {(job.company || "C").charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p className="job-title">{job.title}</p>
+                        <p className="job-company">🏢 {job.company}</p>
+                      </div>
                     </div>
 
+                    <div className="job-meta">
+                      {job.location && <span className="badge" style={{ background: "var(--clr-surface-2)", color: "var(--clr-text-muted)" }}>📍 {job.location}</span>}
+                      {job.jobType && <span className="badge" style={{ background: bg, color }}>{job.jobType}</span>}
+                      {job.salary && <span className="badge badge-success">💰 {job.salary}</span>}
+                    </div>
+
+                    {job.description && (
+                      <p className="job-description" style={{ WebkitLineClamp: 2, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {job.description}
+                      </p>
+                    )}
+
+                    {skills(job).length > 0 && (
+                      <div className="job-skills-row">
+                        {skills(job).slice(0, 4).map(s => (
+                          <span key={s} className="skill-pill" style={{ fontSize: 12 }}>{s}</span>
+                        ))}
+                        {skills(job).length > 4 && (
+                          <span className="badge" style={{ background: "var(--clr-surface-2)", color: "var(--clr-text-muted)" }}>+{skills(job).length - 4}</span>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ borderTop: "1px solid var(--clr-border)", paddingTop: 12, display: "flex", gap: 8 }}>
+                      <button className="btn btn-primary btn-sm"
+                        onClick={e => { e.stopPropagation(); navigate(`/job-details/${job.id}`); }}>
+                        View Details →
+                      </button>
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={e => {
+                          e.stopPropagation();
+                          sessionStorage.setItem("selectedJobId", String(job.id));
+                          navigate("/skill-gap");
+                        }}>
+                        Gap Analysis
+                      </button>
+                    </div>
                   </div>
-
-                </div>
-
-
-                {/* JOB INFO */}
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    marginTop: "18px"
-                  }}
-                >
-
-                  <span className="badge">
-                    📍 {job.location}
-                  </span>
-
-                  <span className="badge">
-                    💼 {job.jobType}
-                  </span>
-
-                  <span className="badge">
-                    💰 {job.salary}
-                  </span>
-
-                </div>
-
-
-                {/* DESCRIPTION */}
-
-                <p
-                  style={{
-                    marginTop: "18px"
-                  }}
-                >
-                  {job.description}
-                </p>
-
-
-                {/* SKILLS */}
-
-                <h3
-                  style={{
-                    marginTop: "18px"
-                  }}
-                >
-                  🧠 Required Skills
-                </h3>
-
-                <div>
-
-                  {job.skills
-                    ?.split(",")
-                    .map((skill, index) => (
-
-                      <span
-                        className="skill-badge"
-                        key={index}
-                      >
-                        {skill.trim()}
-                      </span>
-
-                    ))}
-
-                </div>
-
-
-                {/* MATCH */}
-
-                <div
-                  style={{
-                    marginTop: "20px",
-                    padding: "15px",
-                    borderRadius: "13px",
-                    background:
-                      "rgba(108,92,231,0.06)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center"
-                  }}
-                >
-
-                  <span>
-                    🎯 Your potential match
-                  </span>
-
-                  <strong
-                    style={{
-                      color: "#6c5ce7"
-                    }}
-                  >
-                    AI Match
-                  </strong>
-
-                </div>
-
-
-                {/* BUTTON */}
-
-                <button
-                  style={{
-                    width: "100%",
-                    marginTop: "18px"
-                  }}
-                  onClick={() =>
-                    navigate(
-                      `/job-details/${job.id}`
-                    )
-                  }
-                >
-                  View Job Details →
-                </button>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        ) : (
-
-          <div
-            className="card"
-            style={{
-              textAlign: "center",
-              marginTop: "25px",
-              padding: "50px"
-            }}
-          >
-
-            <div style={{ fontSize: "55px" }}>
-              🔎
+                );
+              })}
             </div>
-
-            <h2>
-              No Jobs Found
-            </h2>
-
-            <p>
-              Try searching for another job title,
-              company or skill.
-            </p>
-
-            <button
-              onClick={() => setSearch("")}
-            >
-              Clear Search
-            </button>
-
-          </div>
-
-        )}
-
-
-        {/* BOTTOM */}
-
-        <section
-          className="card"
-          style={{
-            marginTop: "35px",
-            textAlign: "center"
-          }}
-        >
-
-          <div style={{ fontSize: "35px" }}>
-            🤖
-          </div>
-
-          <h2>
-            Want more personalized results?
-          </h2>
-
-          <p>
-            Let ResumeIQ compare your resume with
-            available jobs and calculate your match score.
-          </p>
-
-          <button
-            onClick={() =>
-              navigate("/job-matching")
-            }
-          >
-            🎯 Try AI Job Matching
-          </button>
-
-          <button
-            onClick={() =>
-              navigate("/recommendations")
-            }
-          >
-            ⭐ Get Recommendations
-          </button>
-
-        </section>
-
-
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "25px"
-          }}
-        >
-
-          <button
-            onClick={() =>
-              navigate("/dashboard")
-            }
-          >
-            ← Back to Dashboard
-          </button>
-
+          )}
         </div>
-
-      </main>
-
+      </div>
     </div>
   );
 }
-
-export default Jobs;

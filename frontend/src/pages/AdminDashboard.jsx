@@ -1,276 +1,83 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 import api from "../services/api";
 
 export default function AdminDashboard() {
-  const navigate = useNavigate();
-
-  const [message, setMessage] = useState("Loading admin dashboard...");
-  const [error, setError] = useState("");
+  const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState("");
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem("user");
-
-    if (!storedUser) {
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    let user;
-
-    try {
-      user = JSON.parse(storedUser);
-    } catch {
-      sessionStorage.removeItem("user");
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    if (user.role !== "ADMIN") {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-
-    api
-      .get("/admin/dashboard")
-      .then((response) => {
-        setMessage(
-          response.data?.message || "Welcome to the ResumeIQ Admin Dashboard!"
-        );
+    api.get("/admin/stats")
+      .then(r => setStats(r.data))
+      .catch(err => {
+        if (err.response?.status === 403) setError("Access denied. Admin role required.");
+        else setError("Unable to load dashboard stats.");
       })
-      .catch((err) => {
-        console.error("Admin dashboard error:", err);
+      .finally(() => setLoading(false));
+  }, []);
 
-        if (err.response?.status === 403) {
-          setError("Access denied. Your account does not have admin permission.");
-        } else {
-          setError(
-            "Unable to load admin data. Please check your backend and API endpoint."
-          );
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [navigate]);
+  const statCards = stats
+    ? [
+        { icon: "👤", label: "Total Students", value: stats.users,   color: "rgba(79,70,229,.1)" },
+        { icon: "📄", label: "Resumes Uploaded", value: stats.resumes, color: "rgba(6,182,212,.1)" },
+        { icon: "💼", label: "Jobs Available",  value: stats.jobs,    color: "rgba(16,185,129,.1)" },
+      ]
+    : [];
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("authEmail");
-    sessionStorage.removeItem("authPassword");
-    sessionStorage.removeItem("authName");
-
-    navigate("/login", { replace: true });
-  };
+  const quickActions = [
+    { icon: "👤", title: "Manage Users",  desc: "View and delete student accounts.", to: "/admin/users", color: "rgba(139,92,246,.1)" },
+    { icon: "💼", title: "Manage Jobs",   desc: "Create, edit, and delete jobs.",   to: "/admin/jobs",  color: "rgba(6,182,212,.1)" },
+  ];
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <Link to="/admin-dashboard" style={styles.brand}>
-          <span style={styles.logo}>R</span>
-          <span>
-            Resume<span style={{ color: "#67e8f9" }}>IQ</span>
-          </span>
-        </Link>
-
-        <button onClick={handleLogout} style={styles.logoutButton}>
-          Logout
-        </button>
-      </header>
-
-      <main style={styles.container}>
-        <div style={styles.welcomeCard}>
-          <span style={styles.badge}>ADMIN PANEL</span>
-
-          <h1 style={styles.heading}>Admin Dashboard</h1>
-
-          <p style={styles.description}>
-            Manage and monitor your ResumeIQ application.
-          </p>
-
-          {loading ? (
-            <p style={styles.info}>Loading dashboard information...</p>
-          ) : error ? (
-            <p role="alert" style={styles.error}>
-              {error}
-            </p>
-          ) : (
-            <p style={styles.success}>{message}</p>
-          )}
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-content">
+        <div className="page-header">
+          <div>
+            <span style={{ display: "inline-block", padding: "4px 10px", background: "rgba(139,92,246,.12)", color: "var(--clr-secondary)", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
+              ADMIN PANEL
+            </span>
+            <h1 className="page-title">Admin Dashboard</h1>
+          </div>
         </div>
+        <div className="page-body">
+          {loading && <div className="loading-center"><span className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} /><p>Loading stats…</p></div>}
+          {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
 
-        <section style={styles.grid}>
-          <div style={styles.card}>
-            <div style={styles.icon}>👤</div>
-            <h2 style={styles.cardTitle}>User Management</h2>
-            <p style={styles.cardText}>
-              Manage user accounts and access.
-            </p>
-            <span style={styles.status}>Module overview</span>
-          </div>
+          {/* Stats */}
+          {stats && (
+            <div className="stats-grid" style={{ marginBottom: 28 }}>
+              {statCards.map(s => (
+                <div key={s.label} className="stat-card">
+                  <div className="stat-icon-wrap" style={{ background: s.color }}>{s.icon}</div>
+                  <div className="stat-value">{s.value}</div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
-          <div style={styles.card}>
-            <div style={styles.icon}>📄</div>
-            <h2 style={styles.cardTitle}>Resume Analysis</h2>
-            <p style={styles.cardText}>
-              Review the resume-analysis module.
-            </p>
-            <Link to="/resume-analysis" style={styles.link}>
-              Open module →
-            </Link>
+          {/* Quick actions */}
+          <div className="section-header"><span className="section-title">Quick Actions</span></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: 16 }}>
+            {quickActions.map(a => (
+              <Link key={a.to} to={a.to} style={{ textDecoration: "none" }}>
+                <div className="card" style={{ cursor: "pointer" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: a.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>
+                    {a.icon}
+                  </div>
+                  <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{a.title}</p>
+                  <p style={{ fontSize: 13, color: "var(--clr-text-muted)", marginBottom: 14 }}>{a.desc}</p>
+                  <span style={{ color: "var(--clr-primary)", fontWeight: 600, fontSize: 13 }}>Open →</span>
+                </div>
+              </Link>
+            ))}
           </div>
-
-          <div style={styles.card}>
-            <div style={styles.icon}>💼</div>
-            <h2 style={styles.cardTitle}>Job Management</h2>
-            <p style={styles.cardText}>
-              Visit the jobs section of ResumeIQ.
-            </p>
-            <Link to="/jobs" style={styles.link}>
-              Open module →
-            </Link>
-          </div>
-
-          <div style={styles.card}>
-            <div style={styles.icon}>🎯</div>
-            <h2 style={styles.cardTitle}>Job Matching</h2>
-            <p style={styles.cardText}>
-              Explore job-matching functionality.
-            </p>
-            <Link to="/job-matching" style={styles.link}>
-              Open module →
-            </Link>
-          </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    fontFamily: "Arial, sans-serif",
-    color: "#ffffff",
-    background:
-      "radial-gradient(circle at top left, #6638d9, transparent 35%), linear-gradient(135deg, #111b4b, #123f83, #087e91)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "20px 6%",
-    borderBottom: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.06)",
-  },
-  brand: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    color: "#ffffff",
-    textDecoration: "none",
-    fontSize: "26px",
-    fontWeight: "bold",
-  },
-  logo: {
-    display: "grid",
-    placeItems: "center",
-    width: "44px",
-    height: "44px",
-    borderRadius: "12px",
-    background: "linear-gradient(135deg, #8b5cf6, #06b6d4)",
-  },
-  logoutButton: {
-    padding: "11px 22px",
-    border: "1px solid rgba(255,255,255,0.5)",
-    borderRadius: "10px",
-    background: "rgba(255,255,255,0.12)",
-    color: "#ffffff",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "40px 24px",
-  },
-  welcomeCard: {
-    padding: "32px",
-    border: "1px solid rgba(255,255,255,0.22)",
-    borderRadius: "20px",
-    background: "rgba(255,255,255,0.1)",
-    backdropFilter: "blur(16px)",
-  },
-  badge: {
-    display: "inline-block",
-    padding: "7px 12px",
-    borderRadius: "20px",
-    background: "rgba(103,232,249,0.15)",
-    color: "#a5f3fc",
-    fontSize: "12px",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-  },
-  heading: {
-    margin: "18px 0 10px",
-    fontSize: "clamp(28px, 4vw, 40px)",
-  },
-  description: {
-    color: "#dbeafe",
-    lineHeight: 1.6,
-  },
-  info: {
-    color: "#a5f3fc",
-  },
-  success: {
-    padding: "12px",
-    borderRadius: "10px",
-    background: "rgba(16,185,129,0.15)",
-    color: "#a7f3d0",
-  },
-  error: {
-    padding: "12px",
-    borderRadius: "10px",
-    background: "rgba(239,68,68,0.18)",
-    color: "#fecaca",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "20px",
-    marginTop: "28px",
-  },
-  card: {
-    padding: "24px",
-    border: "1px solid rgba(255,255,255,0.2)",
-    borderRadius: "18px",
-    background: "rgba(255,255,255,0.1)",
-    backdropFilter: "blur(12px)",
-  },
-  icon: {
-    fontSize: "32px",
-  },
-  cardTitle: {
-    fontSize: "19px",
-    margin: "16px 0 10px",
-  },
-  cardText: {
-    color: "#dbeafe",
-    fontSize: "14px",
-    lineHeight: 1.6,
-  },
-  status: {
-    display: "inline-block",
-    marginTop: "8px",
-    color: "#a5f3fc",
-    fontSize: "13px",
-  },
-  link: {
-    display: "inline-block",
-    marginTop: "8px",
-    color: "#67e8f9",
-    fontWeight: "bold",
-    textDecoration: "none",
-  },
-};

@@ -1,33 +1,11 @@
 package com.resumeiq.backend.config;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-@Configuration
+/**
+ * CORS is handled centrally by SecurityConfig.corsConfigurationSource().
+ * This class is intentionally left empty to avoid conflicting with the
+ * CorsConfigurationSource bean defined in SecurityConfig, which covers
+ * all allowed origins (read from cors.allowed-origins in application.properties).
+ */
 public class CorsConfig {
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-
-        return new WebMvcConfigurer() {
-
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-
-                registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173")
-                        .allowedMethods(
-                                "GET",
-                                "POST",
-                                "PUT",
-                                "DELETE",
-                                "OPTIONS"
-                        )
-                        .allowedHeaders("*")
-                        .allowCredentials(false);
-            }
-        };
-    }
+    // Intentionally empty — see SecurityConfig.corsConfigurationSource()
 }

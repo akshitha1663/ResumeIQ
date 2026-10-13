@@ -1,603 +1,175 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 import api from "../services/api";
 
-function JobDetails() {
+export default function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [job, setJob] = useState(null);
+  const [job, setJob]         = useState(null);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [applying, setApplying] = useState(false);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    getJobDetails();
+    if (!id) { setLoading(false); return; }
+    api.get(`/jobs/${id}`)
+      .then(r => setJob(r.data))
+      .catch(() => setMessage({ type: "error", text: "Unable to load job details." }))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  const getJobDetails = async () => {
-    try {
-      const response = await api.get(`/jobs/${id}`);
-
-      console.log("Job details:", response.data);
-
-      setJob(response.data);
-    } catch (error) {
-      console.error(error);
-      setMessage("Unable to load job details.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleApply = async () => {
+    setApplying(true); setMessage({ type: "", text: "" });
     try {
-      setApplying(true);
-      setMessage("");
-
-      const response = await api.post(`/jobs/${id}/apply`);
-
-      console.log(response.data);
-
-      setMessage("Application submitted successfully! 🎉");
-    } catch (error) {
-      console.error(error);
-
-      if (error.response) {
-        setMessage(
-          "Application failed: " +
-          (error.response.data || "Server error")
-        );
-      } else {
-        setMessage("Cannot connect to backend.");
-      }
-    } finally {
-      setApplying(false);
-    }
+      await api.post(`/jobs/${id}/apply`);
+      setMessage({ type: "success", text: "Application submitted! 🎉" });
+    } catch (err) {
+      setMessage({ type: "error", text: err.response?.data?.message || "Application failed. Please try again." });
+    } finally { setApplying(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="loading">
-        💼 Loading job details...
-      </div>
-    );
-  }
+  const skills = job?.skills
+    ? job.skills.split(",").map(s => s.trim()).filter(Boolean)
+    : [];
 
-  if (!job) {
-    return (
-      <div className="page-container">
-
-        <div
-          className="card"
-          style={{
-            textAlign: "center",
-            padding: "50px"
-          }}
-        >
-          <div style={{ fontSize: "55px" }}>
-            😕
-          </div>
-
-          <h2>Job Not Found</h2>
-
-          <p>
-            We couldn't find the job you're looking for.
-          </p>
-
-          <button onClick={() => navigate("/jobs")}>
-            ← Back to Jobs
-          </button>
-        </div>
-
-      </div>
-    );
-  }
-
-  const skills = job.skills
-    ? job.skills.split(",")
+  const infoRows = job
+    ? [
+        { label: "Company",  value: job.company },
+        { label: "Location", value: job.location },
+        { label: "Job Type", value: job.jobType },
+        { label: "Salary",   value: job.salary },
+      ].filter(r => r.value)
     : [];
 
   return (
-    <div className="app-container">
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-content">
+        {loading && (
+          <div className="loading-center" style={{ paddingTop: 80 }}>
+            <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+            <p>Loading job details…</p>
+          </div>
+        )}
 
-      {/* NAVBAR */}
+        {!loading && !job && (
+          <div className="page-body" style={{ paddingTop: 48 }}>
+            <div className="empty-state">
+              <div className="empty-icon">😕</div>
+              <h3>Job Not Found</h3>
+              <p>{message.text || "We couldn't find the job you're looking for."}</p>
+              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate("/jobs")}>
+                ← Back to Jobs
+              </button>
+            </div>
+          </div>
+        )}
 
-      <header
-        style={{
-          background: "white",
-          padding: "16px 30px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid #e7e7f3",
-          position: "sticky",
-          top: 0,
-          zIndex: 10
-        }}
-      >
-
-        <div>
-
-          <h2
-            style={{
-              margin: 0,
-              color: "#6c5ce7"
-            }}
-          >
-            ✨ ResumeIQ
-          </h2>
-
-          <small style={{ color: "#73758c" }}>
-            AI Career Assistant
-          </small>
-
-        </div>
-
-        <button
-          onClick={() => navigate("/dashboard")}
-        >
-          🏠 Dashboard
-        </button>
-
-      </header>
-
-
-      <main className="page-container">
-
-        {/* BACK BUTTON */}
-
-        <button
-          onClick={() => navigate("/jobs")}
-          style={{
-            background: "transparent",
-            color: "#6c5ce7",
-            boxShadow: "none",
-            paddingLeft: 0
-          }}
-        >
-          ← Back to Jobs
-        </button>
-
-
-        {/* JOB HEADER */}
-
-        <section
-          className="gradient-card"
-          style={{
-            marginTop: "10px"
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "20px",
-              flexWrap: "wrap"
-            }}
-          >
-
-            {/* COMPANY ICON */}
-
-            <div
-              style={{
-                width: "75px",
-                height: "75px",
-                borderRadius: "20px",
-                background: "rgba(255,255,255,0.20)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "32px",
-                fontWeight: "800"
-              }}
-            >
-              {job.company?.charAt(0)?.toUpperCase()}
+        {!loading && job && (
+          <>
+            {/* Hero header */}
+            <div style={{ background: "var(--grad-hero)", color: "#fff", padding: "32px" }}>
+              <button
+                onClick={() => navigate("/jobs")}
+                style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 20 }}>
+                ← Back to Jobs
+              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+                <div style={{ width: 72, height: 72, borderRadius: 18, background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, fontWeight: 800 }}>
+                  {(job.company || "C").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <span style={{ display: "inline-block", padding: "4px 10px", background: "rgba(255,255,255,.15)", borderRadius: 20, fontSize: 12, marginBottom: 8 }}>💼 Job Opportunity</span>
+                  <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>{job.title}</h1>
+                  <p style={{ opacity: .85, fontSize: 15 }}>🏢 {job.company}</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}>
+                {job.location && <span style={{ background: "rgba(255,255,255,.14)", padding: "8px 14px", borderRadius: 10, fontSize: 14 }}>📍 {job.location}</span>}
+                {job.jobType && <span style={{ background: "rgba(255,255,255,.14)", padding: "8px 14px", borderRadius: 10, fontSize: 14 }}>⏱ {job.jobType}</span>}
+                {job.salary && <span style={{ background: "rgba(255,255,255,.14)", padding: "8px 14px", borderRadius: 10, fontSize: 14 }}>💰 {job.salary}</span>}
+              </div>
             </div>
 
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, padding: "28px 32px", alignItems: "start" }}>
+              {/* Left column */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {/* Description */}
+                <div className="card">
+                  <p className="section-title" style={{ marginBottom: 14 }}>📋 Job Description</p>
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--clr-text-muted)", whiteSpace: "pre-wrap" }}>
+                    {job.description || "No description provided."}
+                  </p>
+                </div>
 
-            <div>
+                {/* Required skills */}
+                {skills.length > 0 && (
+                  <div className="card">
+                    <p className="section-title" style={{ marginBottom: 14 }}>🧠 Required Skills</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {skills.map(s => <span key={s} className="skill-pill">✓ {s}</span>)}
+                    </div>
+                  </div>
+                )}
 
-              <span
-                style={{
-                  background: "rgba(255,255,255,0.18)",
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: "13px"
-                }}
-              >
-                💼 Job Opportunity
-              </span>
+                {/* Info table */}
+                <div className="card">
+                  <p className="section-title" style={{ marginBottom: 14 }}>ℹ️ Job Details</p>
+                  {infoRows.map(r => (
+                    <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid var(--clr-border)" }}>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{r.label}</span>
+                      <span style={{ fontSize: 14, color: "var(--clr-text-muted)" }}>{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-              <h1
-                style={{
-                  marginTop: "12px"
-                }}
-              >
-                {job.title}
-              </h1>
+              {/* Right sticky panel */}
+              <div style={{ position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Apply card */}
+                <div className="card" style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>🚀</div>
+                  <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Ready to Apply?</p>
+                  <p style={{ fontSize: 13, color: "var(--clr-text-muted)", marginBottom: 16 }}>Take the next step in your career.</p>
+                  <button className="btn btn-primary btn-full" onClick={handleApply} disabled={applying}>
+                    {applying ? "Submitting…" : "🚀 Apply Now"}
+                  </button>
+                  {message.text && (
+                    <div className={`alert alert-${message.type === "error" ? "error" : "success"}`} style={{ marginTop: 12, textAlign: "left" }}>
+                      {message.text}
+                    </div>
+                  )}
+                </div>
 
-              <p>
-                🏢 {job.company}
-              </p>
+                {/* AI matching card */}
+                <div style={{ background: "var(--grad-primary)", borderRadius: "var(--radius-lg)", padding: 20, textAlign: "center", color: "#fff" }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>🎯</div>
+                  <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Check Your Match</p>
+                  <p style={{ fontSize: 13, opacity: .85, marginBottom: 16 }}>See how your resume stacks up against this role.</p>
+                  <button
+                    style={{ background: "#fff", color: "var(--clr-primary)", border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, cursor: "pointer", width: "100%" }}
+                    onClick={() => {
+                      sessionStorage.setItem("selectedJobId", String(job.id));
+                      navigate("/skill-gap");
+                    }}>
+                    Analyse Gap →
+                  </button>
+                </div>
 
+                {/* Quick nav */}
+                <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm btn-full" style={{ justifyContent: "flex-start" }}
+                    onClick={() => navigate("/jobs")}>🔍 Browse More Jobs</button>
+                  <button className="btn btn-ghost btn-sm btn-full" style={{ justifyContent: "flex-start" }}
+                    onClick={() => navigate("/recommendations")}>⭐ AI Recommendations</button>
+                </div>
+              </div>
             </div>
-
-          </div>
-
-
-          {/* JOB QUICK INFO */}
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "10px",
-              marginTop: "25px"
-            }}
-          >
-
-            <span
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                padding: "9px 14px",
-                borderRadius: "10px"
-              }}
-            >
-              📍 {job.location}
-            </span>
-
-            <span
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                padding: "9px 14px",
-                borderRadius: "10px"
-              }}
-            >
-              💼 {job.jobType}
-            </span>
-
-            <span
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                padding: "9px 14px",
-                borderRadius: "10px"
-              }}
-            >
-              💰 {job.salary}
-            </span>
-
-          </div>
-
-        </section>
-
-
-        {/* MAIN CONTENT */}
-
-        <div
-          className="grid grid-2"
-          style={{
-            marginTop: "30px",
-            alignItems: "start"
-          }}
-        >
-
-          {/* LEFT SIDE */}
-
-          <div>
-
-            {/* DESCRIPTION */}
-
-            <section className="card">
-
-              <span className="badge">
-                📋 About the Job
-              </span>
-
-              <h2 style={{ marginTop: "15px" }}>
-                Job Description
-              </h2>
-
-              <p>
-                {job.description ||
-                  "No job description available."}
-              </p>
-
-            </section>
-
-
-            {/* SKILLS */}
-
-            <section
-              className="card"
-              style={{ marginTop: "25px" }}
-            >
-
-              <span className="badge">
-                🧠 Skills
-              </span>
-
-              <h2 style={{ marginTop: "15px" }}>
-                Required Skills
-              </h2>
-
-              <p>
-                Skills required for this position:
-              </p>
-
-              <div style={{ marginTop: "15px" }}>
-
-                {skills.map((skill, index) => (
-
-                  <span
-                    className="skill-badge"
-                    key={index}
-                  >
-                    ✓ {skill.trim()}
-                  </span>
-
-                ))}
-
-              </div>
-
-            </section>
-
-
-            {/* JOB INFORMATION */}
-
-            <section
-              className="card"
-              style={{ marginTop: "25px" }}
-            >
-
-              <span className="badge">
-                ℹ️ Job Information
-              </span>
-
-              <div
-                style={{
-                  marginTop: "20px"
-                }}
-              >
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "14px 0",
-                    borderBottom:
-                      "1px solid #e7e7f3"
-                  }}
-                >
-                  <strong>Company</strong>
-                  <span>{job.company}</span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "14px 0",
-                    borderBottom:
-                      "1px solid #e7e7f3"
-                  }}
-                >
-                  <strong>Location</strong>
-                  <span>{job.location}</span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "14px 0",
-                    borderBottom:
-                      "1px solid #e7e7f3"
-                  }}
-                >
-                  <strong>Job Type</strong>
-                  <span>{job.jobType}</span>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "14px 0"
-                  }}
-                >
-                  <strong>Salary</strong>
-                  <span>{job.salary}</span>
-                </div>
-
-              </div>
-
-            </section>
-
-          </div>
-
-
-          {/* RIGHT SIDE */}
-
-          <div
-            style={{
-              position: "sticky",
-              top: "100px"
-            }}
-          >
-
-            {/* APPLY CARD */}
-
-            <section
-              className="card"
-              style={{
-                textAlign: "center"
-              }}
-            >
-
-              <div style={{ fontSize: "45px" }}>
-                🚀
-              </div>
-
-              <h2>
-                Ready to Apply?
-              </h2>
-
-              <p>
-                Take the next step toward your
-                career opportunity.
-              </p>
-
-              <button
-                onClick={handleApply}
-                disabled={applying}
-                style={{
-                  width: "100%",
-                  marginTop: "15px",
-                  padding: "15px"
-                }}
-              >
-                {applying
-                  ? "⏳ Applying..."
-                  : "🚀 Apply Now"}
-              </button>
-
-
-              {message && (
-                <div
-                  className={
-                    message.includes("successfully")
-                      ? "success"
-                      : "error"
-                  }
-                  style={{
-                    marginTop: "15px",
-                    textAlign: "left"
-                  }}
-                >
-                  {message}
-                </div>
-              )}
-
-            </section>
-
-
-            {/* AI MATCH CARD */}
-
-            <section
-              className="gradient-card"
-              style={{
-                marginTop: "25px",
-                textAlign: "center"
-              }}
-            >
-
-              <div style={{ fontSize: "40px" }}>
-                🤖
-              </div>
-
-              <h2>
-                AI Job Matching
-              </h2>
-
-              <p>
-                See how well your resume matches
-                this job's requirements.
-              </p>
-
-              <button
-                onClick={() =>
-                  navigate("/job-matching")
-                }
-                style={{
-                  background: "white",
-                  color: "#6c5ce7",
-                  width: "100%",
-                  marginTop: "15px"
-                }}
-              >
-                🎯 Check Match
-              </button>
-
-            </section>
-
-
-            {/* APPLICATIONS */}
-
-            <section
-              className="card"
-              style={{
-                marginTop: "25px"
-              }}
-            >
-
-              <h3>
-                📋 Track Your Application
-              </h3>
-
-              <p>
-                After applying, you can track
-                your application status.
-              </p>
-
-              <button
-                onClick={() =>
-                  navigate("/applications")
-                }
-                style={{
-                  width: "100%",
-                  marginTop: "10px"
-                }}
-              >
-                View My Applications
-              </button>
-
-            </section>
-
-          </div>
-
-        </div>
-
-
-        {/* BOTTOM ACTIONS */}
-
-        <section
-          style={{
-            textAlign: "center",
-            marginTop: "35px",
-            marginBottom: "30px"
-          }}
-        >
-
-          <button
-            onClick={() => navigate("/jobs")}
-          >
-            🔍 Explore More Jobs
-          </button>
-
-          <button
-            onClick={() =>
-              navigate("/recommendations")
-            }
-          >
-            ⭐ AI Recommendations
-          </button>
-
-          <button
-            onClick={() =>
-              navigate("/dashboard")
-            }
-          >
-            🏠 Dashboard
-          </button>
-
-        </section>
-
-      </main>
-
+          </>
+        )}
+      </div>
     </div>
   );
 }
-
-export default JobDetails;
