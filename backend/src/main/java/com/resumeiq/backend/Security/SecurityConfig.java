@@ -20,6 +20,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.resumeiq.backend.service.CustomerUserDetailsService;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.AuthenticationEntryPoint;
+
 @Configuration
 public class SecurityConfig {
 
@@ -64,10 +67,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+        };
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            CorsConfigurationSource corsConfigurationSource)
+            CorsConfigurationSource corsConfigurationSource,
+            AuthenticationEntryPoint authenticationEntryPoint)
             throws Exception {
 
         http
@@ -76,6 +90,7 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/",
                     "/api/auth/register",
                     "/api/auth/login",
                     "/api/auth/health",
@@ -85,7 +100,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .httpBasic(Customizer.withDefaults());
+            .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint));
 
         return http.build();
     }
