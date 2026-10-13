@@ -91,6 +91,28 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/",
+                    "/index.html",
+                    "/assets/**",
+                    "/*.svg",
+                    "/*.ico",
+                    "/*.png",
+                    "/*.json",
+                    "/login",
+                    "/register",
+                    "/dashboard",
+                    "/resume-upload",
+                    "/resume-analysis",
+                    "/skills",
+                    "/jobs",
+                    "/job-details",
+                    "/job-details/**",
+                    "/job-matching",
+                    "/skill-gap",
+                    "/recommendations",
+                    "/applications",
+                    "/ai-assistant",
+                    "/admin-dashboard",
+                    "/admin/**",
                     "/api/auth/register",
                     "/api/auth/login",
                     "/api/auth/health",
@@ -98,7 +120,8 @@ public class SecurityConfig {
                     "/health"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
             )
             .httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint));
 
