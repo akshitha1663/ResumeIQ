@@ -19,6 +19,11 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ManageUsers from "./pages/ManageUsers";
 import ManageJobs from "./pages/ManageJobs";
 import AiChat from "./pages/AiChat";
+import Roadmap from "./pages/Roadmap";
+import InterviewCoach from "./pages/InterviewCoach";
+import CareerComparison from "./pages/CareerComparison";
+import JobAlerts from "./pages/JobAlerts";
+import ManageRoles from "./pages/ManageRoles";
 
 function App() {
   return (
@@ -64,6 +69,18 @@ function App() {
           <Route path="/applications" element={
             <ProtectedRoute><Applications /></ProtectedRoute>
           } />
+          <Route path="/roadmap" element={
+            <ProtectedRoute><Roadmap /></ProtectedRoute>
+          } />
+          <Route path="/interview-coach" element={
+            <ProtectedRoute><InterviewCoach /></ProtectedRoute>
+          } />
+          <Route path="/career-comparison" element={
+            <ProtectedRoute><CareerComparison /></ProtectedRoute>
+          } />
+          <Route path="/job-alerts" element={
+            <ProtectedRoute><JobAlerts /></ProtectedRoute>
+          } />
           <Route path="/ai-assistant" element={
             <ProtectedRoute><AiChat /></ProtectedRoute>
           } />
@@ -77,6 +94,9 @@ function App() {
           } />
           <Route path="/admin/jobs" element={
             <ProtectedRoute requiredRole="ADMIN"><ManageJobs /></ProtectedRoute>
+          } />
+          <Route path="/admin/roles" element={
+            <ProtectedRoute requiredRole="ADMIN"><ManageRoles /></ProtectedRoute>
           } />
 
           <Route path="*" element={<Navigate to="/" replace />} />

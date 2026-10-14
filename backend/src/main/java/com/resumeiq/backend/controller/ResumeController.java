@@ -129,10 +129,45 @@ public class ResumeController {
         return ResponseEntity.ok(all);
     }
 
+    // ─── Get current user's latest resume ────────────────────────────────────
+    @GetMapping("/latest")
+    public ResponseEntity<Resume> getLatestResume(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        return resumeRepository.findFirstByUserIdOrderByUploadedAtDesc(user.getId())
+                .map(r -> {
+                    r.setFilePath(null);
+                    return ResponseEntity.ok(r);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // ─── Analyze a resume ────────────────────────────────────────────────────
     @GetMapping("/{resumeId}/analysis")
     public ResponseEntity<Map<String, Object>> getResumeAnalysis(
             @PathVariable Long resumeId) {
         return ResponseEntity.ok(resumeAnalysisService.analyzeResume(resumeId));
+    }
+
+    // ─── Compare Resume with Job Description ──────────────────────────────────
+    @PostMapping("/{resumeId}/compare-jd")
+    public ResponseEntity<Map<String, Object>> compareWithJd(
+            @PathVariable Long resumeId,
+            @RequestBody Map<String, String> body) {
+        String jd = body.getOrDefault("jobDescription", "");
+        return ResponseEntity.ok(resumeAnalysisService.compareWithJobDescription(resumeId, jd));
+    }
+
+    // ─── Rewrite Bullet Point ────────────────────────────────────────────────
+    @PostMapping("/rewrite-bullet")
+    public ResponseEntity<Map<String, String>> rewriteBullet(
+            @RequestBody Map<String, String> body) {
+        String bullet = body.getOrDefault("bulletPoint", "");
+        String role = body.getOrDefault("targetRole", "Software Engineer");
+        return ResponseEntity.ok(resumeAnalysisService.rewriteBulletPoint(bullet, role));
     }
 }

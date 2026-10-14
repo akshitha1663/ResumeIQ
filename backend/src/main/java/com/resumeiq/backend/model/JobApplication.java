@@ -10,6 +10,7 @@ public class JobApplication {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private Long userId;
 
     private Long jobId;
@@ -22,7 +23,11 @@ public class JobApplication {
 
     private String appliedDate;
 
-    private String status;
+    // Saved, Applied, Interview, Offer, Rejected
+    private String status = "Applied";
+
+    @Column(length = 2000)
+    private String notes;
 
     public JobApplication() {
     }
@@ -42,7 +47,7 @@ public class JobApplication {
         this.company = company;
         this.location = location;
         this.appliedDate = appliedDate;
-        this.status = status;
+        this.status = status != null ? status : "Applied";
     }
 
     public Long getId() {
@@ -107,5 +112,13 @@ public class JobApplication {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }

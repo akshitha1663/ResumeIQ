@@ -1,6 +1,7 @@
 package com.resumeiq.backend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,34 @@ public class JobController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Job>> getAllJobs() {
-        return ResponseEntity.ok(jobRepository.findAll());
+    public ResponseEntity<List<Job>> getJobs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) String workMode,
+            @RequestParam(required = false) String location) {
+
+        if ((keyword != null && !keyword.isBlank())
+                || (jobType != null && !jobType.isBlank())
+                || (workMode != null && !workMode.isBlank())
+                || (location != null && !location.isBlank())) {
+            return ResponseEntity.ok(jobRepository.searchJobs(
+                    keyword != null && !keyword.isBlank() ? keyword.trim() : null,
+                    jobType != null && !jobType.isBlank() ? jobType.trim() : null,
+                    workMode != null && !workMode.isBlank() ? workMode.trim() : null,
+                    location != null && !location.isBlank() ? location.trim() : null
+            ));
+        }
+
+        return ResponseEntity.ok(jobRepository.findByActiveTrueOrderByIdDesc());
+    }
+
+    @GetMapping("/metadata")
+    public ResponseEntity<Map<String, Object>> getJobMetadata() {
+        return ResponseEntity.ok(Map.of(
+            "jobTypes", List.of("Full-time", "Part-time", "Internship", "Contract", "Freelance", "Temporary"),
+            "workModes", List.of("Remote", "Hybrid", "On-site"),
+            "experienceLevels", List.of("Entry Level", "Mid Level", "Senior", "Lead")
+        ));
     }
 
     @GetMapping("/{id}")
@@ -42,9 +69,13 @@ public class JobController {
             job.setCompany(jobDetails.getCompany());
             job.setLocation(jobDetails.getLocation());
             job.setJobType(jobDetails.getJobType());
+            job.setWorkMode(jobDetails.getWorkMode());
+            job.setExperienceLevel(jobDetails.getExperienceLevel());
             job.setSalary(jobDetails.getSalary());
             job.setSkills(jobDetails.getSkills());
             job.setDescription(jobDetails.getDescription());
+            job.setApplyLink(jobDetails.getApplyLink());
+            job.setActive(jobDetails.isActive());
             return ResponseEntity.ok(jobRepository.save(job));
         }).orElse(ResponseEntity.notFound().build());
     }

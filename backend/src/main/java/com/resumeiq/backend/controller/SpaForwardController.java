@@ -24,10 +24,17 @@ public class SpaForwardController {
         "/skill-gap",
         "/recommendations",
         "/applications",
+        "/saved-jobs",
         "/ai-assistant",
+        "/roadmap",
+        "/interview-coach",
+        "/career-comparison",
+        "/job-alerts",
+        "/profile",
         "/admin-dashboard",
         "/admin/users",
-        "/admin/jobs"
+        "/admin/jobs",
+        "/admin/roles"
     })
     public String forwardSpaRoutes() {
         return "forward:/index.html";

@@ -9,10 +9,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -21,7 +21,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.resumeiq.backend.service.CustomerUserDetailsService;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.web.AuthenticationEntryPoint;
 
 @Configuration
 public class SecurityConfig {
@@ -110,14 +109,22 @@ public class SecurityConfig {
                     "/skill-gap",
                     "/recommendations",
                     "/applications",
+                    "/saved-jobs",
                     "/ai-assistant",
+                    "/roadmap",
+                    "/interview-coach",
+                    "/career-comparison",
+                    "/job-alerts",
+                    "/profile",
                     "/admin-dashboard",
                     "/admin/**",
                     "/api/auth/register",
                     "/api/auth/login",
                     "/api/auth/health",
                     "/api/health",
-                    "/health"
+                    "/health",
+                    "/api/target-roles/**",
+                    "/api/jobs/**"
                 ).permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()

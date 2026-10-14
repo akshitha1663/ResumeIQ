@@ -20,15 +20,17 @@ export default function AdminDashboard() {
 
   const statCards = stats
     ? [
-        { icon: "👤", label: "Total Students", value: stats.users,   color: "rgba(79,70,229,.1)" },
-        { icon: "📄", label: "Resumes Uploaded", value: stats.resumes, color: "rgba(6,182,212,.1)" },
-        { icon: "💼", label: "Jobs Available",  value: stats.jobs,    color: "rgba(16,185,129,.1)" },
+        { icon: "👤", label: "Total Students",  value: stats.users,       color: "rgba(79,70,229,.1)" },
+        { icon: "📄", label: "Resumes Uploaded", value: stats.resumes,    color: "rgba(6,182,212,.1)" },
+        { icon: "💼", label: "Jobs Available",   value: stats.jobs,       color: "rgba(16,185,129,.1)" },
+        { icon: "🎯", label: "Target Roles",     value: stats.targetRoles || 0, color: "rgba(139,92,246,.1)" },
       ]
     : [];
 
   const quickActions = [
-    { icon: "👤", title: "Manage Users",  desc: "View and delete student accounts.", to: "/admin/users", color: "rgba(139,92,246,.1)" },
-    { icon: "💼", title: "Manage Jobs",   desc: "Create, edit, and delete jobs.",   to: "/admin/jobs",  color: "rgba(6,182,212,.1)" },
+    { icon: "🎯", title: "Target Roles",  desc: "Configure target roles & required skill sets.", to: "/admin/roles", color: "rgba(139,92,246,.1)" },
+    { icon: "💼", title: "Manage Jobs",   desc: "Create, edit, and delete job listings.",        to: "/admin/jobs",  color: "rgba(6,182,212,.1)" },
+    { icon: "👤", title: "Manage Users",  desc: "View and manage student accounts.",             to: "/admin/users", color: "rgba(79,70,229,.1)" },
   ];
 
   return (

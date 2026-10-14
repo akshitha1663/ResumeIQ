@@ -1,19 +1,18 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
 
-/* Circular donut score */
 function DonutRing({ score, size = 160, stroke = 14 }) {
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const pct = Math.min(Math.max(score, 0), 100);
   const offset = circ - (pct / 100) * circ;
-  const color = pct >= 70 ? "#00b894" : pct >= 40 ? "#fdcb6e" : "#e17055";
+  const color = pct >= 75 ? "var(--clr-success)" : pct >= 50 ? "var(--clr-warning)" : "var(--clr-danger)";
   return (
-    <div className="score-ring-wrap" style={{ width: size, height: size }}>
+    <div className="score-ring-wrap" style={{ width: size, height: size, position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
       <svg style={{ width: size, height: size, transform: "rotate(-90deg)" }} viewBox={`0 0 ${size} ${size}`}>
-        <circle fill="none" stroke="var(--clr-bg-2)" strokeWidth={stroke} cx={size / 2} cy={size / 2} r={r} />
+        <circle fill="none" stroke="var(--clr-surface-2)" strokeWidth={stroke} cx={size / 2} cy={size / 2} r={r} />
         <circle
           fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
           cx={size / 2} cy={size / 2} r={r}
@@ -21,286 +20,440 @@ function DonutRing({ score, size = 160, stroke = 14 }) {
           style={{ transition: "stroke-dashoffset .8s ease" }}
         />
       </svg>
-      <div className="score-ring-label">
-        <span className="score-ring-value" style={{ fontSize: 38, color }}>{pct}%</span>
-        <span className="score-ring-sub">ATS Score</span>
+      <div style={{ position: "absolute", textAlign: "center" }}>
+        <span style={{ fontSize: 36, fontWeight: 900, color, display: "block", lineHeight: 1 }}>{pct}%</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--clr-text-muted)", textTransform: "uppercase" }}>ATS Score</span>
       </div>
     </div>
   );
 }
 
-/* Download report as plain-text */
 function downloadReport(analysis) {
   if (!analysis) return;
+  const bd = analysis.scoreBreakdown || {};
   const lines = [
-    `ResumeIQ – Resume Analysis Report`,
+    `ResumeIQ – Comprehensive ATS Resume Analysis Report`,
     `============================================================`,
-    `File:          ${analysis.fileName}`,
-    `ATS Score:     ${analysis.resumeScore}/100`,
+    `File Name:      ${analysis.fileName}`,
+    `Overall Score:  ${analysis.resumeScore}/100`,
     ``,
-    `STRENGTHS`,
+    `SCORE BREAKDOWN`,
+    `  • Skills:                 ${bd.skillsScore || 0} / ${bd.skillsMax || 30} pts`,
+    `  • Work Experience:        ${bd.experienceScore || 0} / ${bd.experienceMax || 25} pts`,
+    `  • Practical Projects:     ${bd.projectsScore || 0} / ${bd.projectsMax || 15} pts`,
+    `  • Education:              ${bd.educationScore || 0} / ${bd.educationMax || 15} pts`,
+    `  • Summary & Contact:      ${bd.summaryContactScore || 0} / ${bd.summaryContactMax || 10} pts`,
+    `  • Certifications:         ${bd.certificationsScore || 0} / ${bd.certificationsMax || 5} pts`,
+    ``,
+    `STRENGTHS DETECTED`,
     ...(analysis.strengths || []).map(s => `  ✓ ${s}`),
     ``,
-    `IMPROVEMENTS NEEDED`,
+    `RECOMMENDED IMPROVEMENTS`,
     ...(analysis.improvements || []).map(s => `  → ${s}`),
     ``,
-    `EXTRACTED SKILLS (${(analysis.skills || []).length})`,
+    `IDENTIFIED SKILLS (${(analysis.skills || []).length})`,
     `  ${(analysis.skills || []).join(", ")}`,
     ``,
-    `SECTIONS DETECTED`,
-    `  Experience : ${analysis.hasExperience ? "✓" : "✗"}`,
-    `  Education  : ${analysis.hasEducation  ? "✓" : "✗"}`,
-    `  Summary    : ${analysis.hasSummary    ? "✓" : "✗"}`,
+    `SECTION PRESENCE`,
+    `  Experience     : ${analysis.hasExperience ? "Present" : "Missing"}`,
+    `  Education      : ${analysis.hasEducation ? "Present" : "Missing"}`,
+    `  Projects       : ${analysis.hasProjects ? "Present" : "Missing"}`,
+    `  Certifications : ${analysis.hasCertifications ? "Present" : "Missing"}`,
+    `  Summary        : ${analysis.hasSummary ? "Present" : "Missing"}`,
+    `  Contact Info   : ${analysis.hasContact ? "Present" : "Missing"}`,
     ``,
-    `NOTE: ${analysis.analysisNote}`,
+    `SCORING RUBRIC NOTE:`,
+    `${analysis.analysisNote}`,
   ];
   const blob = new Blob([lines.join("\n")], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = "resume-analysis-report.txt"; a.click();
+  a.href = url;
+  a.download = `resumeiq-report-${analysis.resumeId || "summary"}.txt`;
+  a.click();
   URL.revokeObjectURL(url);
 }
 
-/* Formatting feedback items derived from analysis */
-function feedbackItems(analysis) {
-  if (!analysis) return [];
-  const items = [];
-  if (analysis.hasSummary)    items.push({ ok: true,  text: "Clean, ATS-friendly format detected" });
-  if (analysis.hasExperience) items.push({ ok: true,  text: "Standard section headings found" });
-  if (!analysis.hasSummary)   items.push({ ok: false, text: "Add a professional summary section" });
-  if (!analysis.hasExperience)items.push({ ok: false, text: "Add a Work Experience section" });
-  items.push({ ok: true,  text: "Use bullet points instead of paragraphs" });
-  items.push({ ok: false, text: "Avoid using tables or columns" });
-  return items;
-}
-
-/* Keyword match mock (derived from real analysis) */
-function keywordMatch(analysis) {
-  if (!analysis) return [];
-  const skills = analysis.skills || [];
-  return skills.slice(0, 6).map((s, i) => ({
-    name: s,
-    found: i < Math.ceil(skills.length * 0.7),
-  }));
-}
-
-/* High-value missing skills (placeholder set minus extracted) */
-const HIGH_VALUE = ["Docker", "Kubernetes", "AWS", "Machine Learning", "GraphQL", "TypeScript", "Redis", "ElasticSearch"];
-
 export default function ResumeAnalysis() {
   const navigate = useNavigate();
-  const [resumeId, setResumeId] = useState(sessionStorage.getItem("resumeId") || "");
-  const [analysis, setAnalysis]   = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
 
-  const analyze = async () => {
-    if (!resumeId.trim()) { setError("Enter a Resume ID (upload one first)."); return; }
-    setLoading(true); setError(""); setAnalysis(null);
+  const [resumeId, setResumeId]     = useState("");
+  const [latestResume, setResume]   = useState(null);
+  const [analysis, setAnalysis]     = useState(null);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState("");
+
+  // Job Description Matcher State
+  const [jdText, setJdText]         = useState("");
+  const [jdResult, setJdResult]     = useState(null);
+  const [jdLoading, setJdLoading]   = useState(false);
+
+  // AI Bullet Point Rewriter State
+  const [bulletText, setBullet]     = useState("");
+  const [targetRole, setTargetRole] = useState("Software Engineer");
+  const [rewriteResult, setRewrite] = useState(null);
+  const [rewriteLoading, setRewriting] = useState(false);
+
+  const fetchAnalysis = async (idToAnalyze) => {
+    const id = idToAnalyze || resumeId;
+    if (!id) return;
+    setLoading(true);
+    setError("");
     try {
-      const res = await api.get(`/resumes/${resumeId.trim()}/analysis`);
+      const res = await api.get(`/resumes/${id}/analysis`);
       setAnalysis(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Analysis failed. Check the resume ID.");
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || "Failed to analyze resume. Please verify the resume ID.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (resumeId) analyze(); }, []);
+  useEffect(() => {
+    // Automatically load user's latest uploaded resume
+    api.get("/resumes/latest")
+      .then(res => {
+        if (res.data) {
+          setResume(res.data);
+          setResumeId(String(res.data.id));
+          fetchAnalysis(res.data.id);
+        }
+      })
+      .catch(() => {
+        // Fallback to sessionStorage if available
+        const savedId = sessionStorage.getItem("resumeId");
+        if (savedId) {
+          setResumeId(savedId);
+          fetchAnalysis(savedId);
+        }
+      });
+  }, []);
 
-  const missing = HIGH_VALUE.filter(
-    hv => !(analysis?.skills || []).map(s => s.toLowerCase()).includes(hv.toLowerCase())
-  );
+  const handleCompareJd = async (e) => {
+    e.preventDefault();
+    if (!jdText.trim() || !analysis?.resumeId) {
+      alert("Please paste a job description first.");
+      return;
+    }
+    setJdLoading(true);
+    try {
+      const res = await api.post(`/resumes/${analysis.resumeId}/compare-jd`, { jobDescription: jdText });
+      setJdResult(res.data);
+    } catch (err) {
+      alert("Failed to compare job description.");
+    } finally {
+      setJdLoading(false);
+    }
+  };
+
+  const handleRewriteBullet = async (e) => {
+    e.preventDefault();
+    if (!bulletText.trim()) return;
+    setRewriting(true);
+    setRewrite(null);
+    try {
+      const res = await api.post("/resumes/rewrite-bullet", {
+        bulletPoint: bulletText,
+        targetRole: targetRole
+      });
+      setRewrite(res.data);
+    } catch (err) {
+      alert("Failed to rewrite bullet point. Please verify AI assistant configuration.");
+    } finally {
+      setRewriting(false);
+    }
+  };
+
+  const bd = analysis?.scoreBreakdown || {};
 
   return (
     <div className="app-layout">
       <Sidebar />
       <div className="main-content">
-        {/* Topbar */}
-        <div className="topbar">
-          <h1 className="topbar-title">Resume Analyzer</h1>
-          <div className="topbar-right">
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                className="form-input" type="text" placeholder="Resume ID"
-                value={resumeId} onChange={e => setResumeId(e.target.value)}
-                style={{ width: 130, padding: "7px 12px", fontSize: 13 }}
-              />
-              <button className="btn btn-primary btn-sm" onClick={analyze} disabled={loading}>
-                {loading ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : "Analyze"}
+        <div className="page-header">
+          <div>
+            <p className="breadcrumb">Workspace / Resume Analyzer</p>
+            <h1 className="page-title">ATS Resume Analyzer & Optimizer</h1>
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {analysis && (
+              <button className="btn btn-outline btn-sm" onClick={() => downloadReport(analysis)}>
+                📥 Download Full Report
               </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => navigate("/resume-upload")}>
-                Upload New Resume
-              </button>
-            </div>
+            )}
+            <Link to="/resume-upload" className="btn btn-primary btn-sm">
+              📄 Upload New Resume
+            </Link>
           </div>
         </div>
 
         <div className="page-body">
-          {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
+          {/* Active resume banner */}
+          <div className="card" style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: 10,
+                background: "var(--clr-primary-lt)", color: "var(--clr-primary)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20
+              }}>
+                📄
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, fontSize: 14 }}>
+                  {analysis?.fileName || latestResume?.fileName || "Resume"}
+                </p>
+                <p style={{ fontSize: 12, color: "var(--clr-text-muted)" }}>
+                  Resume ID: <strong>{analysis?.resumeId || resumeId || "—"}</strong> • Status: {analysis?.status || "Ready"}
+                </p>
+              </div>
+            </div>
 
-          {/* Prompt to upload if no resume */}
-          {!loading && !analysis && !error && (
-            <div className="empty-state">
-              <div className="empty-icon">📊</div>
-              <h3>No resume analyzed yet</h3>
-              <p>Upload a PDF or DOCX, then enter the Resume ID above to get your ATS score, skills, and feedback.</p>
-              <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={() => navigate("/resume-upload")}>
-                Upload Resume →
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                className="form-input"
+                type="text"
+                placeholder="Switch Resume ID"
+                value={resumeId}
+                onChange={e => setResumeId(e.target.value)}
+                style={{ width: 140, padding: "6px 12px", fontSize: 13 }}
+              />
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => fetchAnalysis(resumeId)}
+                disabled={loading || !resumeId}
+              >
+                Analyze ID
               </button>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="loading-center card" style={{ padding: 48 }}>
+              <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+              <p style={{ marginTop: 14, fontWeight: 600 }}>Running comprehensive ATS text extraction and parsing…</p>
             </div>
           )}
 
-          {loading && (
-            <div className="loading-center">
-              <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
-              <p>Extracting text and scoring your resume…</p>
+          {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
+
+          {!analysis && !loading && !error && (
+            <div className="empty-state card" style={{ padding: 48 }}>
+              <div className="empty-icon">📊</div>
+              <h3>No Resume Loaded</h3>
+              <p>Upload a resume in PDF or DOCX format to receive instant ATS scoring, keyword analysis, and bullet point rewrites.</p>
+              <Link to="/resume-upload" className="btn btn-primary" style={{ marginTop: 14 }}>
+                Upload Your Resume
+              </Link>
             </div>
           )}
 
           {analysis && !loading && (
-            <>
-              {/* ATS layout — left panel + right panel */}
-              <div className="ats-layout" style={{ marginBottom: 20 }}>
-                {/* LEFT: Score + file info + actions */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div className="card ats-score-card">
-                    <p style={{ fontSize: 12, fontWeight: 700, color: "var(--clr-text-faint)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 16 }}>ATS Analyzer Score</p>
-                    <DonutRing score={analysis.resumeScore} />
-
-                    <div style={{ marginTop: 20 }}>
-                      <p style={{ fontWeight: 700, fontSize: 16 }}>New CV: {analysis.fileName}</p>
-                      <p style={{ fontSize: 13, color: "var(--clr-text-muted)", marginTop: 4 }}>Your resume has been analyzed</p>
-                    </div>
-
-                    <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap", justifyContent: "center" }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => downloadReport(analysis)}>
-                        ⬇ Download Report
-                      </button>
-                      <button className="btn btn-outline btn-sm" onClick={() => navigate("/resume-upload")}>
-                        ↑ Upload New Resume
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Quick Tips */}
-                  <div className="card">
-                    <p className="section-title" style={{ marginBottom: 12 }}>⚡ Quick Tips</p>
-                    {(analysis.improvements || []).slice(0, 3).map((tip, i) => (
-                      <div key={i} style={{ fontSize: 13, color: "var(--clr-text-muted)", padding: "6px 0", borderBottom: i < 2 ? "1px solid var(--clr-border)" : "none" }}>
-                        → {tip}
-                      </div>
-                    ))}
-                    <button className="btn btn-primary btn-sm btn-full" style={{ marginTop: 14 }}
-                      onClick={() => navigate("/skill-gap")}>
-                      Full Gap Analysis →
-                    </button>
-                  </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {/* Score & Breakdown Cards */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 20 }}>
+                {/* Donut Card */}
+                <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 28 }}>
+                  <DonutRing score={analysis.resumeScore} size={170} stroke={16} />
+                  <p style={{ fontWeight: 800, fontSize: 18, marginTop: 16 }}>
+                    {analysis.resumeScore >= 75 ? "Excellent ATS Score 🎉" : analysis.resumeScore >= 50 ? "Solid Foundation 📈" : "Needs Optimization ⚠️"}
+                  </p>
+                  <p style={{ fontSize: 12.5, color: "var(--clr-text-muted)", marginTop: 6, maxWidth: 280 }}>
+                    Transparent scoring evaluated across 6 criteria according to real recruiter applicant tracking systems.
+                  </p>
                 </div>
 
-                {/* RIGHT: Keyword match + Formatting + Skills + Missing */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {/* Keyword Match */}
-                  <div className="card">
-                    <div className="section-header">
-                      <span className="section-title">🔑 Keyword Match</span>
-                      <span className="badge badge-primary">{analysis.skills?.length || 0} found</span>
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                      {keywordMatch(analysis).map(k => (
-                        <span key={k.name} className={`skill-pill ${k.found ? "matched" : "missing"}`}>
-                          {k.found ? "✓" : "✗"} {k.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Formatting Feedback */}
-                  <div className="card">
-                    <p className="section-title" style={{ marginBottom: 12 }}>📝 Formatting Feedback</p>
-                    {feedbackItems(analysis).map((item, i) => (
-                      <div key={i} className="feedback-row">
-                        <div className={`feedback-dot ${item.ok ? "ok" : "warn"}`}>
-                          {item.ok ? "✓" : "!"}
-                        </div>
-                        <span style={{ fontSize: 13, color: "var(--clr-text)" }}>{item.text}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Section flags */}
-                  <div className="card">
-                    <p className="section-title" style={{ marginBottom: 12 }}>📋 Sections Detected</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {/* Rubric Breakdown Progress Bars */}
+                <div className="card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 14 }}>📊 Transparent ATS Score Breakdown</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {[
-                        { key: "hasExperience", label: "Experience" },
-                        { key: "hasEducation",  label: "Education" },
-                        { key: "hasSummary",    label: "Summary" },
-                      ].map(({ key, label }) => (
-                        <span key={key} className={`badge ${analysis[key] ? "badge-success" : "badge-danger"}`}>
-                          {analysis[key] ? "✓" : "✗"} {label}
-                        </span>
+                        { label: "Technical & Soft Skills", score: bd.skillsScore || 0, max: 30, color: "var(--clr-primary)" },
+                        { label: "Work Experience Section", score: bd.experienceScore || 0, max: 25, color: "#6366f1" },
+                        { label: "Practical Projects & Portfolio", score: bd.projectsScore || 0, max: 15, color: "#06b6d4" },
+                        { label: "Education & Degree Credentials", score: bd.educationScore || 0, max: 15, color: "#10b981" },
+                        { label: "Summary & Contact Information", score: bd.summaryContactScore || 0, max: 10, color: "#f59e0b" },
+                        { label: "Certifications & Specializations", score: bd.certificationsScore || 0, max: 5, color: "#8b5cf6" },
+                      ].map((item, i) => (
+                        <div key={i}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, fontWeight: 700, marginBottom: 3 }}>
+                            <span>{item.label}</span>
+                            <span>{item.score} / {item.max} pts</span>
+                          </div>
+                          <div className="progress-bar">
+                            <div
+                              className="progress-fill"
+                              style={{ width: `${(item.score / item.max) * 100}%`, background: item.color }}
+                            />
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Bottom row: Extracted skills + Missing skills */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div className="card">
-                  <div className="section-header">
-                    <span className="section-title">🧠 Extracted Skills</span>
-                    <span className="badge badge-primary">{analysis.skills?.length}</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                    {(analysis.skills || []).length
-                      ? (analysis.skills || []).map(s => <span key={s} className="skill-pill">{s}</span>)
-                      : <p style={{ fontSize: 13, color: "var(--clr-text-muted)" }}>No skills detected. List them by name in your resume.</p>
-                    }
-                  </div>
-                </div>
-                <div className="card">
-                  <div className="section-header">
-                    <span className="section-title">🚨 Missing High-Value Skills</span>
-                    <span className="badge badge-warning">{missing.length}</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                    {missing.slice(0, 8).map(s => (
-                      <span key={s} className="skill-pill missing">{s}</span>
-                    ))}
-                    {missing.length === 0 && (
-                      <p style={{ fontSize: 13, color: "var(--clr-success)" }}>🎉 Great! You have all common high-value skills.</p>
-                    )}
-                  </div>
+                  <p style={{ fontSize: 11, color: "var(--clr-text-muted)", marginTop: 12 }}>
+                    💡 {analysis.analysisNote}
+                  </p>
                 </div>
               </div>
 
               {/* Strengths & Improvements */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
-                <div className="card">
-                  <p className="section-title" style={{ color: "var(--clr-success)", marginBottom: 12 }}>✅ Strengths</p>
-                  {(analysis.strengths || []).map(s => (
-                    <div key={s} className="feedback-row">
-                      <div className="feedback-dot ok">✓</div>
-                      <span style={{ fontSize: 13 }}>{s}</span>
-                    </div>
-                  ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                <div className="card" style={{ borderLeft: "4px solid var(--clr-success)" }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, color: "var(--clr-success)", marginBottom: 12 }}>
+                    ✅ Detected Strengths ({analysis.strengths?.length || 0})
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {analysis.strengths?.map((s, i) => (
+                      <div key={i} style={{ display: "flex", gap: 8, fontSize: 13 }}>
+                        <span style={{ color: "var(--clr-success)" }}>✓</span>
+                        <span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="card">
-                  <p className="section-title" style={{ color: "var(--clr-warning)", marginBottom: 12 }}>📌 Improvements</p>
-                  {(analysis.improvements || []).map(s => (
-                    <div key={s} className="feedback-row">
-                      <div className="feedback-dot warn">!</div>
-                      <span style={{ fontSize: 13 }}>{s}</span>
-                    </div>
+
+                <div className="card" style={{ borderLeft: "4px solid var(--clr-warning)" }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, color: "#d97706", marginBottom: 12 }}>
+                    ⚡ Actionable Improvement Suggestions ({analysis.improvements?.length || 0})
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {analysis.improvements?.map((s, i) => (
+                      <div key={i} style={{ display: "flex", gap: 8, fontSize: 13 }}>
+                        <span style={{ color: "#d97706" }}>→</span>
+                        <span>{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Extracted Skills Cloud */}
+              <div className="card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800 }}>
+                    🏷️ Extracted Skills & Technologies ({analysis.skills?.length || 0})
+                  </h3>
+                  <Link to="/skill-gap" className="btn btn-ghost btn-sm">
+                    View Missing Skills in Skill Gap →
+                  </Link>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {analysis.skills?.map(s => (
+                    <span key={s} className="skill-pill matched">
+                      {s}
+                    </span>
                   ))}
                 </div>
               </div>
 
-              <p style={{ fontSize: 11, color: "var(--clr-text-faint)", marginTop: 16 }}>
-                ℹ️ {analysis.analysisNote}
-              </p>
-            </>
+              {/* Job Description Keyword Comparison Feature */}
+              <div className="card">
+                <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>
+                  🎯 Target Job Description Matcher
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--clr-text-muted)", marginBottom: 14 }}>
+                  Paste a real job posting's description below to compare missing keywords against your active resume.
+                </p>
+                <form onSubmit={handleCompareJd}>
+                  <textarea
+                    className="form-textarea"
+                    rows={4}
+                    placeholder="Paste full job description or requirements here..."
+                    value={jdText}
+                    onChange={e => setJdText(e.target.value)}
+                    style={{ marginBottom: 12 }}
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={jdLoading || !jdText.trim()}>
+                    {jdLoading ? "Scanning JD Keywords…" : "🔍 Compare with Job Description"}
+                  </button>
+                </form>
+
+                {jdResult && (
+                  <div style={{ marginTop: 16, background: "var(--clr-surface-2)", padding: 16, borderRadius: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontWeight: 800, fontSize: 14 }}>
+                        Keyword Alignment: {jdResult.matchPercent}%
+                      </span>
+                      <span className="badge badge-primary">{jdResult.matchPercent}% Match</span>
+                    </div>
+
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--clr-success)", marginBottom: 4 }}>
+                        MATCHED KEYWORDS ({jdResult.matchedKeywords?.length}):
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {jdResult.matchedKeywords?.map(k => (
+                          <span key={k} className="skill-pill matched" style={{ fontSize: 11 }}>{k}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "var(--clr-danger)", marginBottom: 4 }}>
+                        MISSING KEYWORDS ({jdResult.missingKeywords?.length}):
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {jdResult.missingKeywords?.map(k => (
+                          <span key={k} className="skill-pill missing" style={{ fontSize: 11 }}>{k}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p style={{ fontSize: 12.5, color: "var(--clr-text-muted)" }}>
+                      💡 {jdResult.recommendation}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Bullet Point Optimizer Feature */}
+              <div className="card">
+                <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>
+                  ✍️ AI Bullet Point Impact Optimizer (XYZ Formula)
+                </h3>
+                <p style={{ fontSize: 13, color: "var(--clr-text-muted)", marginBottom: 14 }}>
+                  Turn weak resume bullet points into measurable, action-oriented accomplishments without fabricating qualifications.
+                </p>
+
+                <form onSubmit={handleRewriteBullet}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                    <div className="form-field" style={{ flex: 3, minWidth: 260 }}>
+                      <label className="form-label">Original Bullet Point</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        placeholder="e.g. Worked on the backend APIs and helped fix database bugs."
+                        value={bulletText}
+                        onChange={e => setBullet(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-field" style={{ flex: 1, minWidth: 160 }}>
+                      <label className="form-label">Target Role</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        value={targetRole}
+                        onChange={e => setTargetRole(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={rewriteLoading || !bulletText.trim()}>
+                    {rewriteLoading ? "Generating AI Optimization…" : "⚡ Rewrite for ATS Impact"}
+                  </button>
+                </form>
+
+                {rewriteResult && (
+                  <div style={{ marginTop: 16, background: "var(--clr-surface-2)", padding: 16, borderRadius: 10 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "var(--clr-text-muted)", textTransform: "uppercase" }}>
+                      AI Recommended Bullet Point Variations:
+                    </p>
+                    <div style={{ whiteSpace: "pre-wrap", fontSize: 13.5, lineHeight: 1.6, marginTop: 6, color: "var(--clr-text)" }}>
+                      {rewriteResult.suggestion}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

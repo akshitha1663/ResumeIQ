@@ -3,19 +3,24 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const studentLinks = [
-  { to: "/dashboard",       icon: "⊞",  label: "Dashboard" },
-  { to: "/ai-assistant",    icon: "🤖", label: "AI Assistant" },
-  { to: "/resume-analysis", icon: "📊", label: "Resume Analyzer" },
-  { to: "/jobs",            icon: "💼", label: "Jobs" },
-  { to: "/recommendations", icon: "⭐", label: "Recommendations" },
-  { to: "/skill-gap",       icon: "📈", label: "Skill Gap" },
-  { to: "/resume-upload",   icon: "📄", label: "Upload Resume" },
+  { to: "/dashboard",          icon: "⊞",  label: "Dashboard" },
+  { to: "/resume-analysis",    icon: "📊", label: "Resume Analyzer" },
+  { to: "/skill-gap",          icon: "📈", label: "Skill Gap Analysis" },
+  { to: "/jobs",               icon: "💼", label: "Jobs" },
+  { to: "/roadmap",            icon: "🗺️", label: "Learning Roadmap" },
+  { to: "/interview-coach",     icon: "🎯", label: "Interview Coach" },
+  { to: "/career-comparison",  icon: "⚖️", label: "Career Comparison" },
+  { to: "/applications",       icon: "📑", label: "Saved & Applied" },
+  { to: "/job-alerts",         icon: "🔔", label: "Job Alerts" },
+  { to: "/ai-assistant",       icon: "🤖", label: "AI Assistant" },
+  { to: "/resume-upload",      icon: "📄", label: "Upload Resume" },
 ];
 
 const adminLinks = [
-  { to: "/admin-dashboard", icon: "⊞",  label: "Dashboard" },
-  { to: "/admin/users",     icon: "👤", label: "Manage Users" },
-  { to: "/admin/jobs",      icon: "💼", label: "Manage Jobs" },
+  { to: "/admin-dashboard",    icon: "⊞",  label: "Dashboard" },
+  { to: "/admin/roles",        icon: "🎯", label: "Target Roles" },
+  { to: "/admin/jobs",         icon: "💼", label: "Manage Jobs" },
+  { to: "/admin/users",        icon: "👤", label: "Manage Users" },
 ];
 
 export default function Sidebar() {

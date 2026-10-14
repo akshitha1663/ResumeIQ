@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+target/
+
+# Uploads & local storage
+uploads/
+*.log
+
+# Environments and secrets
+*.env
+*.env.*
+.env
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
