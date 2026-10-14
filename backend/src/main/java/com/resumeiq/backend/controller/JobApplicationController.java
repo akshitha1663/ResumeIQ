@@ -103,7 +103,7 @@ public class JobApplicationController {
     }
 
     // ─── 4. Update Application Stage / Notes ──────────────────────────────────
-    @PutMapping("/{id}")
+    @PutMapping({"/{id}", "/{id}/status"})
     public ResponseEntity<?> updateApplication(
             @PathVariable Long id,
             @RequestBody JobApplication details,
