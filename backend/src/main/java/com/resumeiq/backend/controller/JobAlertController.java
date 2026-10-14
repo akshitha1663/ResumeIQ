@@ -92,4 +92,25 @@ public class JobAlertController {
 
         return ResponseEntity.ok(matches);
     }
+
+    @GetMapping("/{id}/matches")
+    public ResponseEntity<List<Job>> getAlertMatchesById(@PathVariable Long id, Principal principal) {
+        User user = getAuthenticatedUser(principal);
+        return alertRepository.findById(id).map(alert -> {
+            if (!alert.getUserId().equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).<List<Job>>build();
+            }
+            List<Job> allJobs = jobRepository.findByActiveTrueOrderByIdDesc();
+            List<Job> matched = allJobs.stream().filter(job -> {
+                boolean matchTitle = alert.getRoleTitle() == null || alert.getRoleTitle().isBlank()
+                        || job.getTitle().toLowerCase().contains(alert.getRoleTitle().toLowerCase());
+                boolean matchLocation = alert.getLocation() == null || alert.getLocation().isBlank()
+                        || job.getLocation().toLowerCase().contains(alert.getLocation().toLowerCase());
+                boolean matchWorkMode = alert.getWorkMode() == null || alert.getWorkMode().isBlank()
+                        || job.getWorkMode().equalsIgnoreCase(alert.getWorkMode());
+                return matchTitle && matchLocation && matchWorkMode;
+            }).toList();
+            return ResponseEntity.ok(matched);
+        }).orElse(ResponseEntity.notFound().build());
+    }
 }

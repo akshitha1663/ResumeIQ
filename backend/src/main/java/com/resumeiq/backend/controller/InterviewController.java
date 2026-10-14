@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/interview")
+@RequestMapping({"/api/interview", "/api/interviews"})
 public class InterviewController {
 
     private final InterviewService interviewService;

@@ -41,15 +41,20 @@ public class RoadmapService {
 
         int duration = (durationDays == 60) ? 60 : 30;
 
-        // Perform skill gap analysis to find missing skills
-        Map<String, Object> gap = skillGapService.analyzeGap(null, targetRoleId, null, userEmail);
-        @SuppressWarnings("unchecked")
-        List<String> missingSkills = (List<String>) gap.getOrDefault("missingSkills", List.of());
-        @SuppressWarnings("unchecked")
-        List<String> needsImprovement = (List<String>) gap.getOrDefault("needsImprovementSkills", List.of());
+        // Perform skill gap analysis if resume exists, else fallback to full required skills
+        List<String> focusSkills = new ArrayList<>();
+        try {
+            Map<String, Object> gap = skillGapService.analyzeGap(null, targetRoleId, null, userEmail);
+            @SuppressWarnings("unchecked")
+            List<String> missingSkills = (List<String>) gap.getOrDefault("missingSkills", List.of());
+            @SuppressWarnings("unchecked")
+            List<String> needsImprovement = (List<String>) gap.getOrDefault("needsImprovementSkills", List.of());
+            focusSkills.addAll(missingSkills);
+            focusSkills.addAll(needsImprovement);
+        } catch (Exception ignored) {
+            // User hasn't uploaded a resume yet; generate roadmap covering all key target role skills
+        }
 
-        List<String> focusSkills = new ArrayList<>(missingSkills);
-        focusSkills.addAll(needsImprovement);
         if (focusSkills.isEmpty()) {
             focusSkills = MatchingService.parseSkills(role.getRequiredSkills());
         }
