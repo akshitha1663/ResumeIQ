@@ -11,9 +11,10 @@ import java.util.List;
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
+    @Query("SELECT j FROM Job j WHERE (j.active IS NULL OR j.active = true) ORDER BY j.id DESC")
     List<Job> findByActiveTrueOrderByIdDesc();
 
-    @Query("SELECT j FROM Job j WHERE j.active = true " +
+    @Query("SELECT j FROM Job j WHERE (j.active IS NULL OR j.active = true) " +
            "AND (:keyword IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "     OR LOWER(j.company) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "     OR LOWER(j.skills) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

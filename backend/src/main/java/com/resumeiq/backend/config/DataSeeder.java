@@ -199,7 +199,23 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedStarterJobs() {
-        if (jobRepository.count() > 0) {
+        List<Job> existing = jobRepository.findAll();
+        if (!existing.isEmpty()) {
+            boolean updated = false;
+            for (Job j : existing) {
+                if (!j.isActive()) {
+                    j.setActive(true);
+                    updated = true;
+                }
+                if (j.getWorkMode() == null || j.getWorkMode().isBlank()) {
+                    j.setWorkMode("Remote");
+                    updated = true;
+                }
+            }
+            if (updated) {
+                jobRepository.saveAll(existing);
+                System.out.println("[ResumeIQ] Activated " + existing.size() + " existing jobs.");
+            }
             return;
         }
 
